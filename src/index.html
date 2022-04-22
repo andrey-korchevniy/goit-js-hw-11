@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Заголовок страницы</title>
+    <title>Поиск фотографий</title>
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/modern-normalize/1.0.0/modern-normalize.min.css"
@@ -11,11 +11,28 @@
       crossorigin="anonymous"
     />
   </head>
-  <body>
-    <!-- Так добавляются фрагменты в главные HTML-файлы страниц. -->
-    <include src="./partials/example.html"></include>
 
-    <!-- Скрипт идёт последним в разметке. В нём уже подключен главный SASS-файл. -->
+  <body>
+    <div class="form-place">
+      <form class="search-form" id="search-form">
+        <input class = 'search-input' type="text" name="searchQuery" autocomplete="off" autofocus placeholder="Search images..." />
+        <p class="submit-btn">
+          <button class="submit" type="submit">Search</button>
+        </p>
+      </form>
+    </div>
+
+    <div class="gallery">
+      <!-- Карточки изображений -->
+    </div>
+
+    <div class="go-up">
+
+        <img src= './images/arrow-up.png'></use>
+
+    </div>
+
     <script src="./index.js"></script>
   </body>
+
 </html>

@@ -1,0 +1,38 @@
+.go-up {
+    display: none;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    background-color: #00a1d2;
+
+    background-image: -webkit-linear-gradient(top, #00a2d3, #0d7796);
+    background-image: -moz-linear-gradient(top, #00a2d3, #0d7796);
+    background-image: -o-linear-gradient(top, #00a2d3, #0d7796);
+    background-image: linear-gradient(to bottom, #00a2d3, #0d7796);
+    transition: all 1s linear;
+
+    & img {
+        width: 40px;
+        height: 40px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50% ,-50%);
+    }
+
+    &:hover
+    {
+        background-color: #0591ba;
+        background-image: -webkit-linear-gradient(top, #0591ba, #00a2d3);
+        background-image: -moz-linear-gradient(top, #0591ba, #00a2d3);
+        background-image: -o-linear-gradient(top, #0591ba, #00a2d3);
+        background-image: linear-gradient(to bottom, #0591ba, #00a2d3);
+   }
+}
+
+.on-screen {
+    display: block;
+}
