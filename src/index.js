@@ -3,77 +3,49 @@ import Notiflix, { Notify } from 'notiflix';
 import pictureCard from './templates/card.hbs';
 import SimpleLightbox from "simplelightbox";
 import "simplelightbox/dist/simple-lightbox.min.css";
+import API from './js/api-service';
+import { refs } from './js/vars';
 
-const refs = {
-    inputForm : document.querySelector('.search-input'),    // форма поиска
-    submitBtn: document.querySelector('.submit'),           // кнопка
-    list: document.querySelector('.gallery'),               // раздел Галерея
-    upBtn: document.querySelector('.go-up'),                // кнопка "назад вверх"
-}
-const axios = require('axios');
-const BASE_URL = 'https://pixabay.com/api/';
-let pageOfList = 1;                                         // номер пакета
-let query = '';                                             // фраза поиска
-let marker = false;                                         // маркер того, нарисован ли полученный пакет
+let gallery;
+let pageOfList = 1;                                     // номер пакета
+let marker = false;                                     // маркер того, нарисован ли полученный пакет
+const apiSerice = new API();
 
-refs.submitBtn.addEventListener('click', onSearch);         // слушатель на кнопку поиска
-refs.upBtn.addEventListener('click', onUpClick);            // слушатель на кнопку "назад вверх"
+refs.submitBtn.addEventListener('click', onSearch);     // слушатель на кнопку поиска
+refs.upBtn.addEventListener('click', onUpClick);        // слушатель на кнопку "назад вверх"
 
 // обработчик клика по кнопке поиска
 function onSearch(event) {
-    event.preventDefault();                     // отмена перезагрузки при нажатии кнопки
-    readyToNewSearch();                         // очистка старых данных
-    goToServer(query);
+    event.preventDefault();         // отмена перезагрузки при нажатии кнопки
+    readyToNewSearch();             // очистка старых данных
+    apiSerice.goToServer()
+        .then(responseHandle)       // если ок, то обрабатываем полученные данные
+        .catch(console.log);
 }
 
 // очищает устаревшие данные
 function readyToNewSearch() {
-    refs.list.innerHTML = '';                   // очистка содержимого при новом поиске
-    pageOfList = 1;                             // возврат начального значения пакета (=1)
-    query = (refs.inputForm.value).trim();      // получили текст, введенный в поле поиска
-    document.body.style.backgroundImage = '';   // очищаем фон страницы
-}
-
-// обрабатывает запрос на сервер за пакетом картинок
-function goToServer(query) {
-    getPicters(query)                       // запрос на сервер через функцию
-        .then(responseHandle)               // если ок, то обрабатываем полученную инфу
-        .catch(console.log);
-}
-
-// оформление запроса на сервер с параметрами по умолчанию
-async function getPicters(query) {
-    document.body.style.cursor = 'wait';                // курсор в состоянии ожидания пока выполняется запрос
-    const results = await axios.get(BASE_URL, {
-        params: {
-            q: query,
-            key: '26774622-02fd403a8846318210c49d0fe',
-            image_type: 'photo',
-            orientation: 'horisontal',
-            safesearch: 'true',
-            per_page: 40,
-            page: pageOfList
-        }
-    });
-    return results;
+    refs.list.innerHTML = '';                           // очистка содержимого страницы при новом поиске
+    pageOfList = 1;                                     // возврат к начальному значению пакета (=1)
+    apiSerice.query = (refs.inputForm.value).trim();    // получили текст, введенный в поле поиска
+    document.body.style.backgroundImage = '';           // очищаем фон страницы
 }
 
 // обработчик полученной с сервера информации + отрисовка
 function responseHandle(data) {
-    const totalHits = data.data.total;      // общее количество найденных элементов
+    const totalImg = data.data.total;      // общее количество найденных элементов
 
-// проверка результата поиска на ноль.
-    if (totalHits === 0) {
+ // проверка результата поиска на ноль.
+    if (totalImg === 0) {
         Notify.failure('Sorry! There are no images mathing your query. Please try again.');
         return
     }
     else {
         if (pageOfList === 1) {     // рисуем подходящий под запросос фон, при условии, что это первый пакет
-            Notify.success(`Hooray! We found ${totalHits} images.`);
+            Notify.success(`Hooray! We found ${totalImg} images.`);
             document.body.style.backgroundImage = `URL(${data.data.hits[0].largeImageURL})`
         } 
     }
-
     renderGallery(data)                     // отрисовка полученного пакета 
 }
 
@@ -83,11 +55,14 @@ window.addEventListener("scroll", () => {
 
     if (docRect.bottom < document.documentElement.clientHeight + 150 && marker) {   // если скрол дошел 150 снизу и маркер позволяет (для избежания дублирования запровсов), то обрабатываем запрос 
         marker = false;
-        pageOfList++;            // увеличиваем номер пакета на 1
-        goToServer(query)
+        pageOfList++;                   // увеличиваем номер пакета на 1
+        apiSerice.page = pageOfList;    // передаем номер пакета в функцию запросов
+        apiSerice.goToServer()
+            .then(responseHandle)       // если ок, то обрабатываем полученные данные
+            .catch(console.log);
     }
 
-    if (window.pageYOffset > 70) {                                                  // вкл/выкл кнопки вверх
+    if (window.pageYOffset > 70) {                          // вкл/выкл кнопки вверх
         refs.upBtn.classList.add("on-screen")}
         else {refs.upBtn.classList.remove("on-screen")}
 });
@@ -97,19 +72,24 @@ function onUpClick() {
     document.documentElement.scrollTop = 0;
 }
 
+// рисуем галерею
 function renderGallery(data) {
     let markup = '';                                                // готовим переменную для отрисовки очередной порции 
-    data.data.hits.map(item => { markup += pictureCard(item)});     // формируем код сетки карточек
-    refs.list.insertAdjacentHTML('beforeend', markup);              // вставляем код в 
+
+    data.data.hits.map(item => { markup += pictureCard(item) });    // формируем код сетки карточек
+    refs.list.insertAdjacentHTML('beforeend', markup);              // вставляем код
     document.body.style.cursor = 'default';                         // возвращаем нормальное состояние курсора
     marker = true;                                                  // маркер принимает значение, что пакет обработан
-    let gallery = new SimpleLightbox('.gallery a', {                // подключение SimpleLightbox с параметрами
-        captionType: 'attr',
-        captionsData: 'alt',
-        widthRatio: 0.95,
-        captionDelay: 500
-    });
-    gallery.on('show.simplelightbox');      
+
+    if (pageOfList === 1)  {
+        gallery = new SimpleLightbox('.gallery a', {                // подключение SimpleLightbox с параметрами при первой прорисовке
+            captionType: 'attr',
+            captionsData: 'alt',
+            widthRatio: 0.95,
+            captionDelay: 500
+        });
+    }
+    gallery.refresh();                                              // обновляем SimpleLightbox при добавлении следующих пакетов 
 }
 
 
